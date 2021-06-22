@@ -229,6 +229,8 @@ class ID3:
         # predict using test dataset
         accuracy, loss = self.predict(test_x, test_y)
 
+        return accuracy, loss
+
     def tree_traversal(self, node, row, data):
         """
         recursively traverse the tree until leaf is reached.
@@ -245,7 +247,7 @@ class ID3:
         else:
             feature = node.feature
             value = data[feature].iloc[row]
-            if pd.to_numeric(value) <= node.slice_thresh:
+            if float(value) <= node.slice_thresh:
                 return self.tree_traversal(node.left, row, data)
             else:
                 return self.tree_traversal(node.right, row, data)
@@ -262,5 +264,5 @@ if __name__ == "__main__":
     test = genfromtxt('train.csv', delimiter=',', dtype="unicode")
 
     # do we need the loss here? example in the tutorial & pdf instructions are a bit different
-    res_loss, res_accuracy = classifier.fit_predict(train, test)
+    res_accuracy, res_loss = classifier.fit_predict(train, test)
     print(res_accuracy)
