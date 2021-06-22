@@ -178,8 +178,7 @@ class ID3Tree:
             if prune_thresh == 1:
                 result = (True, self.data["diagnosis"].iloc[0])
             else:
-                self.data["diagnosis"].idxmax()
-                result = (True,)
+                result = (True,self.data['diagnosis'].value_counts().idxmax())
 
         # not a leaf
         else:
