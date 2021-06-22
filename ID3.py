@@ -231,9 +231,9 @@ class ID3:
         # fit the classifier
         self.fit(train_x, train_y)
         # predict using test dataset
-        accuracy, loss = self.predict(test_x, test_y)
+        predictions = self.predict(test_x, test_y)
 
-        return accuracy, loss
+        return predictions
 
     def tree_traversal(self, node, row, data):
         """
@@ -266,7 +266,16 @@ if __name__ == "__main__":
     # get numpy ndarray from csv
     train = genfromtxt('train.csv', delimiter=',', dtype="unicode")
     test = genfromtxt('train.csv', delimiter=',', dtype="unicode")
-
-    # do we need the loss here? example in the tutorial & pdf instructions are a bit different
-    res_accuracy, res_loss = classifier.fit_predict(train, test)
-    print(res_accuracy)
+    test_results = test[:, 0:1]
+    test_results = np.reshape(test_results, (301,))
+    temp = np.ndarray((301,))
+    index = 0
+    for d in test_results:
+        if d == 'M':
+            temp[index] = 1
+        else:
+            temp[index] = 0
+        index += 1
+    predictions = classifier.fit_predict(train, test)
+    print(predictions - temp)
+    print(temp)
