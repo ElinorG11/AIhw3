@@ -40,7 +40,7 @@ class ID3Tree:
     Tree class creates the ID3 tree
     """
 
-    def __init__(self, prune_thresh=1, data=None):
+    def __init__(self,prune_thresh=1, data=None):
         """
         Init function generates the tree.
         :param data: the dataset
@@ -52,9 +52,10 @@ class ID3Tree:
         self.right = None
         self.data = data
         self.diagnosis = None
+        self.prune_thresh = 1
 
         # check if we reached a leaf and whether it is homogenous
-        leaf, diagnosis = self.check_homogenous_leaves(prune_thresh)
+        leaf, diagnosis = self.check_homogenous_leaves(self.prune_thresh)
         if leaf:
             self.diagnosis = diagnosis
         else:
@@ -193,8 +194,8 @@ class ID3:
 
     def fit(self, x, y):
         # arrange in "data" variable, so we can pass it to ID3Tree() class to create the tree.
-        data = x.copy()
-        data["diagnosis"] = y
+        data = pd.DataFrame(x.copy())
+        data["diagnosis"] = pd.DataFrame(y)
         self.id3tree = ID3Tree(self.prune_thresh, data=data)
 
     def predict(self, x, y):
@@ -236,6 +237,8 @@ class ID3:
         return predictions
 
     def predict_accuracy(self, test_x, test_y):
+        test_x = pd.DataFrame(test_x)
+        test_y = pd.DataFrame(test_y)
         data = test_x.copy()
         data["diagnosis"] = test_y
         correct_predictions = 0
@@ -255,6 +258,8 @@ class ID3:
         return accuracy
 
     def accuracy_fit_predict(self, x_train, x_test, y_train, y_test):
+        x_train = pd.DataFrame(x_train)
+        y_train = pd.DataFrame(y_train)
         self.fit(x_train, y_train)
         accuracy = self.predict_accuracy(x_test, y_test)
         return accuracy
@@ -287,11 +292,10 @@ def experiment(all_data, graph=False,):
     graph: option to plot graph
     """
     x, y = get_data_from_df(all_data)
-    x = x.array
-    y = y.array
+    x = x.to_numpy()
+    y = y.to_numpy()
     m_values = [i for i in range(1, 6)]  # TODO: check what happens when m_value = 0
 
-    accuracy_split_values = []
     num_splits = 5
 
     kf = KFold(n_splits=num_splits, random_state=314985664, shuffle=True)
@@ -307,7 +311,7 @@ def experiment(all_data, graph=False,):
             accuracy_k_values.append(accuracy)
         avg_list.append(sum(accuracy_k_values) / float(len(accuracy_k_values)))
     if graph:
-        plt.xlabel('m_values')
+        plt.xlabel(m_values)
         plt.ylabel(avg_list)
         plt.plot("Value of M", "Accuracy")
         plt.show()
@@ -321,6 +325,7 @@ if __name__ == "__main__":
     train = genfromtxt('train.csv', delimiter=',', dtype="unicode")
     data = pd.DataFrame(train)
     test = genfromtxt('train.csv', delimiter=',', dtype="unicode")
+    data = pd.DataFrame(train)
     test_results = test[:, 0:1]
     test_results = np.ndarray.reshape(test_results, (301,))
     temp = np.ndarray((301,))
