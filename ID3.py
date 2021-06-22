@@ -83,7 +83,7 @@ class ID3Tree:
         values_list = values.tolist()
         # creating the separator's list
         sorted_values = sorted(values_list, key=lambda x: x)
-        separators_list = [(x + y) / 2 for x, y in zip(sorted_values, sorted_values[1:])]
+        separators_list = [(float(x) + float(y)) / 2 for x, y in zip(sorted_values, sorted_values[1:])]
         return values, diagnosis, separators_list
 
     def calculate_information_gain(self, feature):
@@ -128,7 +128,7 @@ class ID3Tree:
         """
         num_of_smaller_samples, num_of_smaller_positive_samples, num_of_larger_samples, num_of_larger_positive_samples = 0, 0, 0, 0
         for val, diag in zip(values, diagnosis):
-            if val <= separator:
+            if float(val) <= separator:
                 num_of_smaller_samples += 1
                 if diag == "M":
                     num_of_smaller_positive_samples += 1
@@ -258,8 +258,8 @@ if __name__ == "__main__":
     classifier = ID3()
 
     # get numpy ndarray from csv
-    train = genfromtxt('train.csv', delimiter=',',dtype="unicode")
-    test = genfromtxt('test.csv', delimiter=',',dtype="unicode")
+    train = genfromtxt('train.csv', delimiter=',', dtype="unicode")
+    test = genfromtxt('train.csv', delimiter=',', dtype="unicode")
 
     # do we need the loss here? example in the tutorial & pdf instructions are a bit different
     res_loss, res_accuracy = classifier.fit_predict(train, test)
