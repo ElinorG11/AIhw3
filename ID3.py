@@ -2,6 +2,7 @@
 # pdf for convenience.
 
 import pandas as pd
+import numpy as np
 from numpy import log2
 from numpy import genfromtxt
 
@@ -194,6 +195,9 @@ class ID3:
         false_negative = 0
         false_positive = 0
         num_of_samples = len(data.index)
+
+        predictions_array = np.ndarray()
+
         for row in range(len(data.index)):
             prediction = self.tree_traversal(self.id3tree, row, data)
             if prediction == data["diagnosis"].iloc[row]:
