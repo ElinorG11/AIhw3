@@ -3,8 +3,10 @@
 
 import pandas as pd
 import numpy as np
+from matplotlib import pyplot as plt
 from numpy import log2
 from numpy import genfromtxt
+from sklearn.model_selection import KFold
 
 DEFAULT_CLASSIFICATION = "M"
 
@@ -38,7 +40,7 @@ class ID3Tree:
     Tree class creates the ID3 tree
     """
 
-    def __init__(self, data=None):
+    def __init__(self, prune_thresh=1, data=None):
         """
         Init function generates the tree.
         :param data: the dataset
@@ -52,7 +54,7 @@ class ID3Tree:
         self.diagnosis = None
 
         # check if we reached a leaf and whether it is homogenous
-        leaf, diagnosis = self.check_homogenous_leaves()
+        leaf, diagnosis = self.check_homogenous_leaves(prune_thresh)
         if leaf:
             self.diagnosis = diagnosis
         else:
@@ -158,7 +160,7 @@ class ID3Tree:
             raise ValueError("feature to separate not found!")
         return best_ig
 
-    def check_homogenous_leaves(self):
+    def check_homogenous_leaves(self, prune_thresh=1):
         """
         function checks whether a node is homogenous. i.e., it reached a state where all of it's data is either "M" or "B".
         :return: (True, diagnosis) or (False, None)
@@ -191,25 +193,16 @@ class ID3:
     def predict(self, x, y):
         data = x.copy()
         data["diagnosis"] = y
-        right_predictions = 0
-        false_negative = 0
-        false_positive = 0
         num_of_samples = len(data.index)
-
-        predictions_array = np.ndarray()
+        predictions_array = np.ndarray([num_of_samples])
 
         for row in range(len(data.index)):
             prediction = self.tree_traversal(self.id3tree, row, data)
-            if prediction == data["diagnosis"].iloc[row]:
-                right_predictions += 1
+            if prediction == "M":
+                predictions_array[row] = 1
             else:
-                if prediction == "M":
-                    false_positive += 1
-                else:
-                    false_negative += 1
-        acc = right_predictions / num_of_samples
-        loss = (0.1 * false_positive + false_negative) / num_of_samples
-        return acc, loss
+                predictions_array[row] = 0
+        return predictions_array
 
     def fit_predict(self, train, test):
         """
@@ -234,6 +227,30 @@ class ID3:
         predictions = self.predict(test_x, test_y)
 
         return predictions
+
+    def predict_accuracy(self, test_x, test_y):
+        data = test_x.copy()
+        data["diagnosis"] = test_y
+        correct_predictions = 0
+        false_negative = 0
+        false_positive = 0
+        num_of_samples = len(data.index)
+        for row in range(len(data.index)):
+            prediction = self.tree_traversal(self.id3tree, row, data)
+            if prediction == data["diagnosis"].iloc[row]:
+                correct_predictions += 1
+            else:
+                if prediction == "M":
+                    false_positive += 1
+                else:
+                    false_negative += 1
+        accuracy = float(correct_predictions) / float(num_of_samples)
+        return accuracy
+
+    def accuracy_fit_predict(self, x_train, x_test, y_train, y_test):
+        self.fit(x_train, y_train)
+        accuracy = self.predict_accuracy(x_test, y_test)
+        return accuracy
 
     def tree_traversal(self, node, row, data):
         """
@@ -279,3 +296,5 @@ if __name__ == "__main__":
     predictions = classifier.fit_predict(train, test)
     print(predictions - temp)
     print(temp)
+
+    experiment(data, graph=True)
