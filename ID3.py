@@ -58,8 +58,8 @@ class ID3Tree:
             # this is not a leaf so we update feature for slicing and slicing val
             self.feature, _, self.slice_thresh = self.choose_feature()
             # slice the dataframe
-            data_left = self.data[self.data[self.feature] <= self.slice_thresh]
-            data_right = self.data[self.data[self.feature] > self.slice_thresh]
+            data_left = self.data[pd.to_numeric(self.data[self.feature]) <= self.slice_thresh]
+            data_right = self.data[pd.to_numeric(self.data[self.feature]) > self.slice_thresh]
             # recursively create more nodes
             self.left = ID3Tree(data=data_left)
             self.right = ID3Tree(data=data_right)
@@ -245,7 +245,7 @@ class ID3:
         else:
             feature = node.feature
             value = data[feature].iloc[row]
-            if value <= node.slice_thresh:
+            if pd.to_numeric(value) <= node.slice_thresh:
                 return self.tree_traversal(node.left, row, data)
             else:
                 return self.tree_traversal(node.right, row, data)
