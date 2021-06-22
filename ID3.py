@@ -64,8 +64,8 @@ class ID3Tree:
             data_left = self.data[pd.to_numeric(self.data[self.feature]) <= self.slice_thresh]
             data_right = self.data[pd.to_numeric(self.data[self.feature]) > self.slice_thresh]
             # recursively create more nodes
-            self.left = ID3Tree(data=data_left)
-            self.right = ID3Tree(data=data_right)
+            self.left = ID3Tree(prune_thresh, data=data_left)
+            self.right = ID3Tree(prune_thresh, data=data_right)
 
     def is_leaf(self):
         """
@@ -170,10 +170,16 @@ class ID3Tree:
         # check if it's an empty leaf and assign it with default classification.
         if len(self.data.index) == 0:
             return True, DEFAULT_CLASSIFICATION
-        # check if leaf is homogenous. Method unique checks if all the labels of the samples in the node has the same attribute.
+        # check if leaf is homogenous.
+        # Method unique checks if all the labels of the samples in the node has the same attribute.
         # unique() returns a list with all the different elements in y ("M"\"B"). if there's only 1, leaf is homogenous.
-        if len(self.data.diagnosis.unique()) == 1:
-            result = (True, self.data["diagnosis"].iloc[0])
+        if len(self.data.diagnosis.unique()) <= prune_thresh:
+            if prune_thresh == 1:
+                result = (True, self.data["diagnosis"].iloc[0])
+            else:
+                self.data["diagnosis"].idxmax()
+                result = (True,)
+
         # not a leaf
         else:
             result = (False, None)
@@ -181,14 +187,15 @@ class ID3Tree:
 
 
 class ID3:
-    def __init__(self):
+    def __init__(self, prune_thresh=1):
         self.id3tree = None
+        self.prune_thresh = prune_thresh
 
     def fit(self, x, y):
         # arrange in "data" variable, so we can pass it to ID3Tree() class to create the tree.
         data = x.copy()
         data["diagnosis"] = y
-        self.id3tree = ID3Tree(data=data)
+        self.id3tree = ID3Tree(self.prune_thresh, data=data)
 
     def predict(self, x, y):
         data = x.copy()
@@ -273,8 +280,38 @@ class ID3:
             else:
                 return self.tree_traversal(node.right, row, data)
 
-    def experiment(self):
-        raise NotImplementedError
+
+def experiment(all_data, graph=False,):
+    """
+    # TODO in order to see accuracy value, please uncomment in main part the first "TODO"
+    graph: option to plot graph
+    """
+    x, y = get_data_from_df(all_data)
+    x = x.array
+    y = y.array
+    m_values = [i for i in range(1, 6)]  # TODO: check what happens when m_value = 0
+
+    accuracy_split_values = []
+    num_splits = 5
+
+    kf = KFold(n_splits=num_splits, random_state=314985664, shuffle=True)
+    avg_list = []
+    for m in m_values:
+        accuracy_k_values = []
+        for train_index, test_index in kf.split(x):
+            x_train, x_test = x[train_index], x[test_index]
+            y_train, y_test = y[train_index], y[test_index]
+            k_classifier = ID3(prune_thresh=m)
+            # predictions = classifier.fit_predict(train, test)
+            accuracy = k_classifier.accuracy_fit_predict(x_train, x_test, y_train, y_test)
+            accuracy_k_values.append(accuracy)
+        avg_list.append(sum(accuracy_k_values) / float(len(accuracy_k_values)))
+    if graph:
+        plt.xlabel('m_values')
+        plt.ylabel(avg_list)
+        plt.plot("Value of M", "Accuracy")
+        plt.show()
+        # print(f"ID3 Value is {}")
 
 
 if __name__ == "__main__":
@@ -282,9 +319,10 @@ if __name__ == "__main__":
 
     # get numpy ndarray from csv
     train = genfromtxt('train.csv', delimiter=',', dtype="unicode")
+    data = pd.DataFrame(train)
     test = genfromtxt('train.csv', delimiter=',', dtype="unicode")
     test_results = test[:, 0:1]
-    test_results = np.reshape(test_results, (301,))
+    test_results = np.ndarray.reshape(test_results, (301,))
     temp = np.ndarray((301,))
     index = 0
     for d in test_results:
