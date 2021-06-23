@@ -330,7 +330,7 @@ def experiment(all_data, graph=False,):
         print(f"average of losses is={avg_loss_list}")
         print(f"loss assuming all labels were 'M' is={loss_all_labels_M}")
     if graph:
-        plt.plot(m_values,avg_accuracy_list)
+        plt.plot(m_values, avg_accuracy_list)
         plt.xlabel("Value of M")
         plt.ylabel("Accuracy")
         plt.show()
@@ -344,8 +344,9 @@ if __name__ == "__main__":
     data = pd.DataFrame(train)
     test = genfromtxt('test1.csv', delimiter=',', dtype="unicode")
     data = pd.DataFrame(train)
-    test_results = test[:, 0:1]
-    test_results = np.ndarray.reshape(test_results, (301,))
+    #test_results = test[:, 0:1]
+    #test_results = np.ndarray.reshape(test_results, (301,))
+    """
     temp = np.ndarray((301,))
     index = 0
     for d in test_results:
@@ -357,5 +358,16 @@ if __name__ == "__main__":
     predictions = classifier.fit_predict(train, test)
     print(predictions - temp)
     print(temp)
-
+    """
+    predictions = classifier.fit_predict(train, test)
+    test_df = pd.DataFrame(test)
+    correct = 0
+    index = 0
+    for row in range(len(data.index)):
+        x = predictions[index]
+        if x == test.iloc[row]:
+            correct += 1
+        index += 1
+    accuracy = correct / len(predictions)
+    print(f"accuracy={accuracy}")
     # experiment(data, graph=True)
