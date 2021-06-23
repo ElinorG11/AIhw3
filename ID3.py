@@ -40,7 +40,7 @@ class ID3Tree:
     Tree class creates the ID3 tree
     """
 
-    def __init__(self,prune_thresh=1, data=None):
+    def __init__(self, prune_thresh=-1, data=None):
         """
         Init function generates the tree.
         :param data: the dataset
@@ -52,7 +52,7 @@ class ID3Tree:
         self.right = None
         self.data = data
         self.diagnosis = None
-        self.prune_thresh = 1
+        self.prune_thresh = prune_thresh
 
         # check if we reached a leaf and whether it is homogenous
         leaf, diagnosis = self.check_homogenous_leaves(self.prune_thresh)
@@ -130,7 +130,8 @@ class ID3Tree:
         :return: num_of_smaller_samples, num_of_smaller_positive_samples, num_of_larger_samples, num_of_larger_positive_samples
         :rtype: tuple
         """
-        num_of_smaller_samples, num_of_smaller_positive_samples, num_of_larger_samples, num_of_larger_positive_samples = 0, 0, 0, 0
+        num_of_smaller_samples, num_of_smaller_positive_samples = 0, 0
+        num_of_larger_samples, num_of_larger_positive_samples = 0, 0
         for val, diag in zip(values, diagnosis):
             if float(val) <= separator:
                 num_of_smaller_samples += 1
@@ -161,7 +162,7 @@ class ID3Tree:
             raise ValueError("feature to separate not found!")
         return best_ig
 
-    def check_homogenous_leaves(self, prune_thresh=1):
+    def check_homogenous_leaves(self, prune_thresh):
         """
         function checks whether a node is homogenous. i.e., it reached a state where all of it's data is either "M" or "B".
         :return: (True, diagnosis) or (False, None)
@@ -174,12 +175,9 @@ class ID3Tree:
         # check if leaf is homogenous.
         # Method unique checks if all the labels of the samples in the node has the same attribute.
         # unique() returns a list with all the different elements in y ("M"\"B"). if there's only 1, leaf is homogenous.
-        if len(self.data.diagnosis.unique()) <= prune_thresh:
-            if prune_thresh == 1:
-                result = (True, self.data["diagnosis"].iloc[0])
-            else:
-                result = (True, self.data['diagnosis'].value_counts().idxmax())
 
+        if len(self.data["diagnosis"].unique()) == 1 or len(self.data["diagnosis"]) <= prune_thresh:
+            result = (True, self.data['diagnosis'].value_counts().idxmax())
         # not a leaf
         else:
             result = (False, None)
@@ -187,7 +185,7 @@ class ID3Tree:
 
 
 class ID3:
-    def __init__(self, prune_thresh=1):
+    def __init__(self, prune_thresh=-1):
         self.id3tree = None
         self.prune_thresh = prune_thresh
 
@@ -298,7 +296,7 @@ class ID3:
                 return self.tree_traversal(node.right, row, data)
 
 
-def experiment(all_data, graph=False,):
+def experiment(all_data, graph=False, ):
     """
     # TODO in order to see accuracy value, please uncomment in main part the first "TODO"
     graph: option to plot graph
@@ -306,7 +304,7 @@ def experiment(all_data, graph=False,):
     x, y = get_data_from_df(all_data)
     x = x.to_numpy()
     y = y.to_numpy()
-    m_values = [i for i in range(1, 6)]  # TODO: check what happens when m_value = 0
+    m_values = [i for i in range(0, 301, 60)]  # TODO: check what happens when m_value = 0
 
     num_splits = 5
 
@@ -315,14 +313,15 @@ def experiment(all_data, graph=False,):
     avg_loss_list = []
     for m in m_values:
         accuracy_k_values = []
-        losses = [] # I think we should store all the losses we recieve & print the one adequate to the highest accuracy
+        losses = []
+        k_classifier = ID3(prune_thresh=m)
+        # I think we should store all the losses we recieve & print the one adequate to the highest accuracy
         for train_index, test_index in kf.split(x):
             x_train, x_test = x[train_index], x[test_index]
             y_train, y_test = y[train_index], y[test_index]
-            k_classifier = ID3(prune_thresh=m)
             # predictions = classifier.fit_predict(train, test)
-            accuracy, loss, loss_all_labels_M = k_classifier.accuracy_fit_predict(x_train, x_test, y_train, y_test)
-            accuracy_k_values.append(accuracy)
+            curr_accuracy, loss, loss_all_labels_M = k_classifier.accuracy_fit_predict(x_train, x_test, y_train, y_test)
+            accuracy_k_values.append(curr_accuracy)
             losses.append(loss)
         avg_accuracy_list.append(sum(accuracy_k_values) / float(len(accuracy_k_values)))
         # not sure if that's what they wanted, but that's how I get the pdf
@@ -344,8 +343,8 @@ if __name__ == "__main__":
     data = pd.DataFrame(train)
     test = genfromtxt('test1.csv', delimiter=',', dtype="unicode")
     data = pd.DataFrame(train)
-    #test_results = test[:, 0:1]
-    #test_results = np.ndarray.reshape(test_results, (301,))
+    # test_results = test[:, 0:1]
+    # test_results = np.ndarray.reshape(test_results, (301,))
     """
     temp = np.ndarray((301,))
     index = 0
@@ -363,11 +362,11 @@ if __name__ == "__main__":
     test_df = pd.DataFrame(test)
     correct = 0
     index = 0
-    for row in range(len(data.index)):
+    for row in range(len(test)):
         x = predictions[index]
-        if x == test.iloc[row]:
+        if (x == 1 and test[row][0] == 'M') or (x == 0 and test[row][0] == 'B'):
             correct += 1
         index += 1
     accuracy = correct / len(predictions)
     print(f"accuracy={accuracy}")
-    # experiment(data, graph=True)
+    experiment(data, graph=True)
