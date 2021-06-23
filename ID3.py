@@ -340,7 +340,7 @@ def experiment(all_data, graph=False, ):
 
 
 if __name__ == "__main__":
-    classifier = ID3()
+    classifier = ID3(prune_thresh=-1)
 
     # get numpy ndarray from csv
     train = genfromtxt('train.csv', delimiter=',', dtype="unicode")

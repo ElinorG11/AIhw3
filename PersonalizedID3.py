@@ -264,16 +264,16 @@ class ID3:
                 correct_predictions += 1
                 if data["diagnosis"].iloc[row] == "B":  # all_labels_sick would be wrong
                     false_positive_all_labels_M += 1
-            else:
-                if prediction == "M":
+            else:s
+                if prediction == "M":  # person is healthy but we predicted sick
                     false_positive += 1
                     false_positive_all_labels_M += 1
                 else:  # person is sick but we predicted healthy
                     false_negative += 1
 
         accuracy = float(correct_predictions) / float(num_of_samples)
-        loss = (false_positive + 8 * false_negative) / num_of_samples
-        loss_all_labels_M = (8 * false_negative_all_labels_M) / num_of_samples
+        loss = (false_positive + 8 * false_negative)
+        loss_all_labels_M = false_positive_all_labels_M
         return accuracy, loss, loss_all_labels_M
 
     def accuracy_fit_predict(self, x_train: np.ndarray, x_test: np.ndarray, y_train: np.ndarray, y_test: np.ndarray):
@@ -339,7 +339,7 @@ def experiment(all_data, graph=False, ):
         print(f"average of losses is={avg_loss_list}")
         print(f"loss assuming all labels were 'M' is={loss_all_labels_M}")
     if graph:
-        plt.plot(m_values, avg_accuracy_list)
+        plt.plot(m_values, avg_loss_list)
         plt.xlabel("Value of M")
         plt.ylabel("Accuracy")
         plt.show()
