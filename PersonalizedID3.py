@@ -186,7 +186,12 @@ class ID3Tree:
         # unique() returns a list with all the different elements in y ("M"\"B"). if there's only 1, leaf is homogenous.
 
         if len(self.data["diagnosis"].unique()) == 1 or len(self.data["diagnosis"]) <= prune_thresh:
-            result = (True, self.data['diagnosis'].value_counts().idxmax())
+            num_of_sick = len([x for x in self.data["diagnosis"] if x == "M"])
+            num_of_healthy = len([x for x in self.data["diagnosis"] if x == "B"])
+            if 8 * num_of_sick < num_of_healthy:
+                result = (True, "B")
+            else:
+                result = (True, "M")
         # not a leaf
         else:
             result = (False, None)
@@ -251,25 +256,20 @@ class ID3:
         false_negative = 0
         false_positive = 0
         # part 4.2 - calculate loss if all patients are ill
-        correct_predictions_all_labels_M = 0
-        false_negative_all_labels_M = 0
-        # false_positive_all_labels_M = 0 # if I get it right there are no false positive in this case9
+        false_positive_all_labels_M = 0
         num_of_samples = len(data.index)
         for row in range(len(data.index)):
             prediction = self.tree_traversal(self.id3tree, row, data)
-            if prediction == data["diagnosis"].iloc[row]:
+            if prediction == data["diagnosis"].iloc[row]:  # pred is correct
                 correct_predictions += 1
-                if prediction == "M":
-                    correct_predictions_all_labels_M += 1
-                else:
-                    false_negative_all_labels_M += 1
+                if data["diagnosis"].iloc[row] == "B":  # all_labels_sick would be wrong
+                    false_positive_all_labels_M += 1
             else:
                 if prediction == "M":
                     false_positive += 1
-                    correct_predictions_all_labels_M += 1
-                else:
+                    false_positive_all_labels_M += 1
+                else:  # person is sick but we predicted healthy
                     false_negative += 1
-                    false_negative_all_labels_M += 1
 
         accuracy = float(correct_predictions) / float(num_of_samples)
         loss = (false_positive + 8 * false_negative) / num_of_samples
@@ -280,8 +280,7 @@ class ID3:
         x_train = pd.DataFrame(x_train)
         y_train = pd.DataFrame(y_train)
         self.fit(x_train, y_train)
-        accuracy, loss, loss_all_labels_M = self.predict_accuracy(x_test, y_test)
-        return accuracy, loss, loss_all_labels_M
+        return self.predict_accuracy(x_test, y_test)
 
     def tree_traversal(self, node, row, data):
         """
@@ -334,6 +333,8 @@ def experiment(all_data, graph=False, ):
             losses.append(loss)
         avg_accuracy_list.append(sum(accuracy_k_values) / float(len(accuracy_k_values)))
         # not sure if that's what they wanted, but that's how I get the pdf
+        print("--------------")
+        print(losses)
         avg_loss_list.append(sum(losses) / float(len(losses)))
         print(f"average of losses is={avg_loss_list}")
         print(f"loss assuming all labels were 'M' is={loss_all_labels_M}")

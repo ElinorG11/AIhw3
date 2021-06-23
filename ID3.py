@@ -251,29 +251,24 @@ class ID3:
         false_negative = 0
         false_positive = 0
         # part 4.2 - calculate loss if all patients are ill
-        correct_predictions_all_labels_M = 0
-        false_negative_all_labels_M = 0
-        # false_positive_all_labels_M = 0 # if I get it right there are no false positive in this case9
+        false_positive_all_labels_M = 0
         num_of_samples = len(data.index)
         for row in range(len(data.index)):
             prediction = self.tree_traversal(self.id3tree, row, data)
-            if prediction == data["diagnosis"].iloc[row]:
+            if prediction == data["diagnosis"].iloc[row]:  # pred is correct
                 correct_predictions += 1
-                if prediction == "M":
-                    correct_predictions_all_labels_M += 1
-                else:
-                    false_negative_all_labels_M += 1
+                if data["diagnosis"].iloc[row] == "B":  # all_labels_sick would be wrong
+                    false_positive_all_labels_M += 1
             else:
-                if prediction == "M":
+                if prediction == "M":  # person is healthy but we predicted sick
                     false_positive += 1
-                    correct_predictions_all_labels_M += 1
-                else:
+                    false_positive_all_labels_M += 1
+                else:  # person is sick but we predicted healthy
                     false_negative += 1
-                    false_negative_all_labels_M += 1
 
         accuracy = float(correct_predictions) / float(num_of_samples)
-        loss = (false_positive + 8 * false_negative) / num_of_samples
-        loss_all_labels_M = (8 * false_negative_all_labels_M) / num_of_samples
+        loss = (false_positive + 8 * false_negative)
+        loss_all_labels_M = false_positive_all_labels_M
         return accuracy, loss, loss_all_labels_M
 
     def accuracy_fit_predict(self, x_train: np.ndarray, x_test: np.ndarray, y_train: np.ndarray, y_test: np.ndarray):
