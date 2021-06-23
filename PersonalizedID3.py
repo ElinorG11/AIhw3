@@ -274,6 +274,7 @@ class ID3:
         accuracy = float(correct_predictions) / float(num_of_samples)
         loss = (false_positive + 8 * false_negative)
         loss_all_labels_M = false_positive_all_labels_M
+
         return accuracy, loss, loss_all_labels_M
 
     def accuracy_fit_predict(self, x_train: np.ndarray, x_test: np.ndarray, y_train: np.ndarray, y_test: np.ndarray):

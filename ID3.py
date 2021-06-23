@@ -267,6 +267,7 @@ class ID3:
                     false_negative += 1
 
         accuracy = float(correct_predictions) / float(num_of_samples)
+
         loss = (false_positive + 8 * false_negative)
         loss_all_labels_M = false_positive_all_labels_M
         return accuracy, loss, loss_all_labels_M
