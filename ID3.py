@@ -178,7 +178,7 @@ class ID3Tree:
             if prune_thresh == 1:
                 result = (True, self.data["diagnosis"].iloc[0])
             else:
-                result = (True,self.data['diagnosis'].value_counts().idxmax())
+                result = (True, self.data['diagnosis'].value_counts().idxmax())
 
         # not a leaf
         else:
@@ -243,25 +243,38 @@ class ID3:
         correct_predictions = 0
         false_negative = 0
         false_positive = 0
+        # part 4.2 - calculate loss if all patients are ill
+        correct_predictions_all_labels_M = 0
+        false_negative_all_labels_M = 0
+        # false_positive_all_labels_M = 0 # if I get it right there are no false positive in this case9
         num_of_samples = len(data.index)
         for row in range(len(data.index)):
             prediction = self.tree_traversal(self.id3tree, row, data)
             if prediction == data["diagnosis"].iloc[row]:
                 correct_predictions += 1
+                if prediction == "M":
+                    correct_predictions_all_labels_M += 1
+                else:
+                    false_negative_all_labels_M += 1
             else:
                 if prediction == "M":
                     false_positive += 1
+                    correct_predictions_all_labels_M += 1
                 else:
                     false_negative += 1
-        accuracy = float(correct_predictions) / float(num_of_samples)
-        return accuracy
+                    false_negative_all_labels_M += 1
 
-    def accuracy_fit_predict(self, x_train, x_test, y_train, y_test):
+        accuracy = float(correct_predictions) / float(num_of_samples)
+        loss = (false_positive + 8 * false_negative) / num_of_samples
+        loss_all_labels_M = (8 * false_negative_all_labels_M) / num_of_samples
+        return accuracy, loss, loss_all_labels_M
+
+    def accuracy_fit_predict(self, x_train: np.ndarray, x_test: np.ndarray, y_train: np.ndarray, y_test: np.ndarray):
         x_train = pd.DataFrame(x_train)
         y_train = pd.DataFrame(y_train)
         self.fit(x_train, y_train)
-        accuracy = self.predict_accuracy(x_test, y_test)
-        return accuracy
+        accuracy, loss, loss_all_labels_M = self.predict_accuracy(x_test, y_test)
+        return accuracy, loss, loss_all_labels_M
 
     def tree_traversal(self, node, row, data):
         """
@@ -298,32 +311,38 @@ def experiment(all_data, graph=False,):
     num_splits = 5
 
     kf = KFold(n_splits=num_splits, random_state=314985664, shuffle=True)
-    avg_list = []
+    avg_accuracy_list = []
+    avg_loss_list = []
     for m in m_values:
         accuracy_k_values = []
+        losses = [] # I think we should store all the losses we recieve & print the one adequate to the highest accuracy
         for train_index, test_index in kf.split(x):
             x_train, x_test = x[train_index], x[test_index]
             y_train, y_test = y[train_index], y[test_index]
             k_classifier = ID3(prune_thresh=m)
             # predictions = classifier.fit_predict(train, test)
-            accuracy = k_classifier.accuracy_fit_predict(x_train, x_test, y_train, y_test)
+            accuracy, loss, loss_all_labels_M = k_classifier.accuracy_fit_predict(x_train, x_test, y_train, y_test)
             accuracy_k_values.append(accuracy)
-        avg_list.append(sum(accuracy_k_values) / float(len(accuracy_k_values)))
+            losses.append(loss)
+        avg_accuracy_list.append(sum(accuracy_k_values) / float(len(accuracy_k_values)))
+        # not sure if that's what they wanted, but that's how I get the pdf
+        avg_loss_list.append(sum(losses) / float(len(losses)))
+        print(f"average of losses is={avg_loss_list}")
+        print(f"loss assuming all labels were 'M' is={loss_all_labels_M}")
     if graph:
-        plt.xlabel(m_values)
-        plt.ylabel(avg_list)
-        plt.plot("Value of M", "Accuracy")
+        plt.plot(m_values,avg_accuracy_list)
+        plt.xlabel("Value of M")
+        plt.ylabel("Accuracy")
         plt.show()
-        # print(f"ID3 Value is {}")
 
 
 if __name__ == "__main__":
     classifier = ID3()
 
     # get numpy ndarray from csv
-    train = genfromtxt('train.csv', delimiter=',', dtype="unicode")
+    train = genfromtxt('train1.csv', delimiter=',', dtype="unicode")
     data = pd.DataFrame(train)
-    test = genfromtxt('train.csv', delimiter=',', dtype="unicode")
+    test = genfromtxt('test1.csv', delimiter=',', dtype="unicode")
     data = pd.DataFrame(train)
     test_results = test[:, 0:1]
     test_results = np.ndarray.reshape(test_results, (301,))
@@ -339,4 +358,4 @@ if __name__ == "__main__":
     print(predictions - temp)
     print(temp)
 
-    experiment(data, graph=True)
+    # experiment(data, graph=True)
