@@ -103,23 +103,32 @@ class ID3Tree:
             num_of_smaller_samples, num_of_smaller_positive_samples, num_of_larger_samples, num_of_larger_positive_samples = self.recalculate_thresh_values(
                 values, diagnosis, separator)
             # calculate the root's IG
-            root_fraction = (num_of_larger_positive_samples + num_of_smaller_positive_samples) / len(values)
-            entropy_root = -root_fraction * log(root_fraction) - ((1 - root_fraction) * log(1 - root_fraction))
+            root_pos_prob = (num_of_larger_positive_samples + num_of_smaller_positive_samples) / len(values)
+            root_neg_prob = 1 - root_pos_prob
+            entropy_root = -root_pos_prob * log(root_pos_prob) - (root_neg_prob * log(root_neg_prob))
+            if num_of_smaller_samples == 0 or num_of_larger_samples == 0:
+                # since this separator won't help us, it will create a node identical to the root
+                ig = 0
+                if ig >= best_ig[0]:
+                    best_ig = (ig, separator)
+                continue
             # calculate the left son's IG
-            fraction = num_of_smaller_positive_samples / num_of_smaller_samples if num_of_smaller_samples != 0 else root_fraction
-            entropy_left = -fraction * log(fraction) - ((1 - fraction) * log(1 - fraction))
+            lchild_pos_prob = num_of_smaller_positive_samples / num_of_smaller_samples
+            lchild_neg_prob = 1 - lchild_pos_prob
+            entropy_left = -lchild_pos_prob * log(lchild_pos_prob) - (lchild_neg_prob * log(lchild_neg_prob))
             # calculate the right son's IG
-            fraction = num_of_larger_positive_samples / num_of_larger_samples if num_of_larger_samples != 0 else root_fraction
-            entropy_right = -fraction * log(fraction) - ((1 - fraction) * log(1 - fraction))
+            rchild_pos_prob = num_of_larger_positive_samples / num_of_larger_samples
+            rchild_neg_prob = 1 - rchild_pos_prob
+            entropy_right = -rchild_pos_prob * log(rchild_pos_prob) - (rchild_neg_prob * log(rchild_neg_prob))
 
             ig = entropy_root - entropy_left * num_of_smaller_samples / len(
                 values) - entropy_right * num_of_larger_samples / len(values)
             if ig >= best_ig[0]:
-                best_ig = ig, separator
+                best_ig = (ig, separator)
 
-            if best_ig[1] is None:
-                raise ValueError("separator not found!")
-            return best_ig
+        if best_ig[1] is None:
+            raise ValueError("separator not found!")
+        return best_ig
 
     def recalculate_thresh_values(self, values, diagnosis, separator):
         """
@@ -304,7 +313,7 @@ def experiment(all_data, graph=False, ):
     x, y = get_data_from_df(all_data)
     x = x.to_numpy()
     y = y.to_numpy()
-    m_values = [i for i in range(0, 301, 60)]  # TODO: check what happens when m_value = 0
+    m_values = [i for i in range(0, 40, 5)]  # TODO: check what happens when m_value = 0
 
     num_splits = 5
 
@@ -339,7 +348,7 @@ if __name__ == "__main__":
     classifier = ID3()
 
     # get numpy ndarray from csv
-    train = genfromtxt('train1.csv', delimiter=',', dtype="unicode")
+    train = genfromtxt('train.csv', delimiter=',', dtype="unicode")
     data = pd.DataFrame(train)
     test = genfromtxt('test1.csv', delimiter=',', dtype="unicode")
     data = pd.DataFrame(train)
