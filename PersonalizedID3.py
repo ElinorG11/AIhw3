@@ -247,7 +247,7 @@ class ID3:
 
         return predictions
 
-    def predict_accuracy(self, test_x, test_y):
+    def calculate_loss_and_accuracy(self, test_x, test_y, predictions):
         test_x = pd.DataFrame(test_x)
         test_y = pd.DataFrame(test_y)
         data = test_x.copy()
@@ -255,33 +255,26 @@ class ID3:
         correct_predictions = 0
         false_negative = 0
         false_positive = 0
-        # part 4.2 - calculate loss if all patients are ill
-        false_positive_all_labels_M = 0
         num_of_samples = len(data.index)
+        real_binary_diagnosis = []
         for row in range(len(data.index)):
-            prediction = self.tree_traversal(self.id3tree, row, data)
-            if prediction == data["diagnosis"].iloc[row]:  # pred is correct
+            if data["diagnosis"].iloc[row] == "M":
+                real_binary_diagnosis.append(1)
+            else:
+                real_binary_diagnosis.append(0)
+        for row in range(len(data.index)):
+            prediction = predictions[row]
+            if prediction == real_binary_diagnosis[row]:  # pred is correct
                 correct_predictions += 1
-                if data["diagnosis"].iloc[row] == "B":  # all_labels_sick would be wrong
-                    false_positive_all_labels_M += 1
-            else:s
-                if prediction == "M":  # person is healthy but we predicted sick
+            else:
+                if prediction == 1:  # person is healthy but we predicted sick
                     false_positive += 1
-                    false_positive_all_labels_M += 1
                 else:  # person is sick but we predicted healthy
                     false_negative += 1
 
         accuracy = float(correct_predictions) / float(num_of_samples)
         loss = (false_positive + 8 * false_negative)
-        loss_all_labels_M = false_positive_all_labels_M
-
-        return accuracy, loss, loss_all_labels_M
-
-    def accuracy_fit_predict(self, x_train: np.ndarray, x_test: np.ndarray, y_train: np.ndarray, y_test: np.ndarray):
-        x_train = pd.DataFrame(x_train)
-        y_train = pd.DataFrame(y_train)
-        self.fit(x_train, y_train)
-        return self.predict_accuracy(x_test, y_test)
+        return accuracy, loss
 
     def tree_traversal(self, node, row, data):
         """
@@ -313,36 +306,25 @@ def experiment(all_data, graph=False, ):
     x, y = get_data_from_df(all_data)
     x = x.to_numpy()
     y = y.to_numpy()
-    m_values = [i for i in range(0, 40, 5)]  # TODO: check what happens when m_value = 0
-
-    num_splits = 5
-
-    kf = KFold(n_splits=num_splits, random_state=314985664, shuffle=True)
-    avg_accuracy_list = []
+    m_values = [i for i in range(1, 51, 10)]  # TODO: check what happens when m_value = 0
+    kf = KFold(n_splits=5, random_state=314985664, shuffle=True)
     avg_loss_list = []
     for m in m_values:
-        accuracy_k_values = []
         losses = []
         k_classifier = ID3(prune_thresh=m)
-        # I think we should store all the losses we recieve & print the one adequate to the highest accuracy
         for train_index, test_index in kf.split(x):
             x_train, x_test = x[train_index], x[test_index]
             y_train, y_test = y[train_index], y[test_index]
-            # predictions = classifier.fit_predict(train, test)
-            curr_accuracy, loss, loss_all_labels_M = k_classifier.accuracy_fit_predict(x_train, x_test, y_train, y_test)
-            accuracy_k_values.append(curr_accuracy)
+            train = np.concatenate((y_train, x_train), axis=1)
+            test = np.concatenate((y_test, x_test), axis=1)
+            predictions = k_classifier.fit_predict(train, test)
+            accuracy, loss = k_classifier.calculate_loss_and_accuracy(x_test, y_test, predictions)
             losses.append(loss)
-        avg_accuracy_list.append(sum(accuracy_k_values) / float(len(accuracy_k_values)))
-        # not sure if that's what they wanted, but that's how I get the pdf
-        print("--------------")
-        print(losses)
-        avg_loss_list.append(sum(losses) / float(len(losses)))
-        print(f"average of losses is={avg_loss_list}")
-        print(f"loss assuming all labels were 'M' is={loss_all_labels_M}")
     if graph:
-        plt.plot(m_values, avg_loss_list)
+        print(f"values of losses are {losses}")
+        plt.plot(m_values, losses)
         plt.xlabel("Value of M")
-        plt.ylabel("Accuracy")
+        plt.ylabel("Loss")
         plt.show()
 
 
@@ -351,33 +333,9 @@ if __name__ == "__main__":
 
     # get numpy ndarray from csv
     train = genfromtxt('train.csv', delimiter=',', dtype="unicode")
-    data = pd.DataFrame(train)
     test = genfromtxt('test1.csv', delimiter=',', dtype="unicode")
+
+    # we send only test dataset to experiment function
     data = pd.DataFrame(train)
-    # test_results = test[:, 0:1]
-    # test_results = np.ndarray.reshape(test_results, (301,))
-    """
-    temp = np.ndarray((301,))
-    index = 0
-    for d in test_results:
-        if d == 'M':
-            temp[index] = 1
-        else:
-            temp[index] = 0
-        index += 1
-    predictions = classifier.fit_predict(train, test)
-    print(predictions - temp)
-    print(temp)
-    """
-    predictions = classifier.fit_predict(train, test)
-    test_df = pd.DataFrame(test)
-    correct = 0
-    index = 0
-    for row in range(len(test)):
-        x = predictions[index]
-        if (x == 1 and test[row][0] == 'M') or (x == 0 and test[row][0] == 'B'):
-            correct += 1
-        index += 1
-    accuracy = correct / len(predictions)
-    print(f"accuracy={accuracy}")
-    experiment(data, graph=True)
+    # TODO: to run the experiment and print the graph, pleas uncomment the following line
+    # experiment(data, graph=True)
