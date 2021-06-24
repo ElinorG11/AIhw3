@@ -292,7 +292,7 @@ class ID3:
                 return self.tree_traversal(node.right, row, data)
 
 
-def experiment(all_data, graph=False):
+def experiment(all_data, m_values=None, graph=False):
     """
     # TODO in order to see accuracy value, please uncomment in main part the first "TODO"
     graph: option to plot graph
@@ -300,7 +300,8 @@ def experiment(all_data, graph=False):
     x, y = get_data_from_df(all_data)
     x = x.to_numpy()
     y = y.to_numpy()
-    m_values = [i for i in range(1, 51, 10)]  # TODO: check what happens when m_value = 0
+    if m_values == None:
+        m_values = [i for i in range(1, 51, 10)]  # TODO: check what happens when m_value = 0
     kf = KFold(n_splits=5, random_state=314985664, shuffle=True)
     avg_accuracy_list = []
     avg_loss_list = []
@@ -321,9 +322,9 @@ def experiment(all_data, graph=False):
         avg_loss_list.append(sum(losses) / float(len(losses)))
     if graph:
         max_acc = max(avg_accuracy_list)
-        print(f"maximal accuracy is: {max_acc}")
-        print(f"values of 5 losses are: {sorted(avg_loss_list)}")
-        print(f"loss assuming all labels were 'M' is: {loss_all_labels_M}")
+        #print(f"maximal accuracy is: {max_acc}")
+        print(f"Value of average loss is: {sorted(avg_loss_list)}")
+        #print(f"loss assuming all labels were 'M' is: {loss_all_labels_M}")
         plt.plot(m_values, avg_accuracy_list)
         plt.xlabel("Value of M")
         plt.ylabel("Accuracy")
@@ -340,4 +341,7 @@ if __name__ == "__main__":
     # we send only test dataset to experiment function
     data = pd.DataFrame(train)
     # TODO: to run the experiment and print the graph, pleas uncomment the following line
-    experiment(data, graph=True)
+    # experiment(data, graph=True)
+
+    # print 5 losses for optimal split value (which is M=0 in our case)
+    # experiment(data,[0,0,0,0,0], graph=True)

@@ -343,4 +343,4 @@ if __name__ == "__main__":
     # we send only test dataset to experiment function
     data = pd.DataFrame(train)
     # TODO: to run the experiment and print the graph, pleas uncomment the following line
-    experiment(data, graph=True)
+    # experiment(data, graph=True)
