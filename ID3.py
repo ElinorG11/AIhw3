@@ -323,7 +323,7 @@ def experiment(all_data, m_values=None, graph=False):
     if graph:
         max_acc = max(avg_accuracy_list)
         #print(f"maximal accuracy is: {max_acc}")
-        print(f"Value of average loss is: {sorted(avg_loss_list)}")
+        #print(f"Value of average loss is: {sorted(avg_loss_list)}")
         #print(f"loss assuming all labels were 'M' is: {loss_all_labels_M}")
         plt.plot(m_values, avg_accuracy_list)
         plt.xlabel("Value of M")
