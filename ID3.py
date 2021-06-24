@@ -39,7 +39,6 @@ class ID3Tree:
     """
     Tree class creates the ID3 tree
     """
-
     def __init__(self, prune_thresh=-1, data=None):
         """
         Init function generates the tree.
@@ -121,8 +120,7 @@ class ID3Tree:
             rchild_neg_prob = 1 - rchild_pos_prob
             entropy_right = -rchild_pos_prob * log(rchild_pos_prob) - (rchild_neg_prob * log(rchild_neg_prob))
 
-            ig = entropy_root - entropy_left * num_of_smaller_samples / len(
-                values) - entropy_right * num_of_larger_samples / len(values)
+            ig = entropy_root - entropy_left * num_of_smaller_samples / len(values) - entropy_right * num_of_larger_samples / len(values)
             if ig >= best_ig[0]:
                 best_ig = (ig, separator)
 
@@ -184,7 +182,7 @@ class ID3Tree:
         # check if leaf is homogenous.
         # Method unique checks if all the labels of the samples in the node has the same attribute.
         # unique() returns a list with all the different elements in y ("M"\"B"). if there's only 1, leaf is homogenous.
-
+        # for pruning we also check the case in which #samples in current note is below given threshold
         if len(self.data["diagnosis"].unique()) == 1 or len(self.data["diagnosis"]) <= prune_thresh:
             result = (True, self.data['diagnosis'].value_counts().idxmax())
         # not a leaf
@@ -256,17 +254,14 @@ class ID3:
                 real_binary_diagnosis.append(1)
             else:
                 real_binary_diagnosis.append(0)
+                false_positive_all_labels_M += 1 # real data classification is B but we always predict M
         for row in range(len(data.index)):
             prediction = predictions[row]
-            if prediction == 0: # person is healthy, but real classification says he is ill, means we got false positive
-                false_positive_all_labels_M += 1
             if prediction == real_binary_diagnosis[row]:  # pred is correct
                 correct_predictions += 1
-                # if real_binary_diagnosis[row] == 0:  # all_labels_sick would be wrong
             else:
                 if prediction == 1:  # person is healthy but we predicted sick
                     false_positive += 1
-                    # false_positive_all_labels_M += 1
                 else:  # person is sick but we predicted healthy
                     false_negative += 1
         accuracy = float(correct_predictions) / float(num_of_samples)
@@ -326,9 +321,9 @@ def experiment(all_data, graph=False):
         avg_loss_list.append(sum(losses) / float(len(losses)))
     if graph:
         max_acc = max(avg_accuracy_list)
-        #print(f"maximal accuracy for M=0 is: {max_acc}")
+        print(f"maximal accuracy is: {max_acc}")
         print(f"values of 5 losses are: {sorted(avg_loss_list)}")
-        #print(f"loss assuming all labels were 'M' is: {loss_all_labels_M}")
+        print(f"loss assuming all labels were 'M' is: {loss_all_labels_M}")
         plt.plot(m_values, avg_accuracy_list)
         plt.xlabel("Value of M")
         plt.ylabel("Accuracy")

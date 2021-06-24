@@ -184,7 +184,12 @@ class ID3Tree:
         # check if leaf is homogenous.
         # Method unique checks if all the labels of the samples in the node has the same attribute.
         # unique() returns a list with all the different elements in y ("M"\"B"). if there's only 1, leaf is homogenous.
-
+        # we choose candidate for pruning by #samples in current note is below given threshold
+        # if it does, we use the definition of loss to decide whether to prune or not
+        # we decide the diagnosis of the node by the majority labels, such that the relation between M and B
+        # will be 8:1 which will potentially minimize the loss, since it acts like the Evaluation function
+        # we have seen in the tutorial, but instead of evaluating the while pruned tree, we only evaluate the
+        # subtree which is the candidate for pruning.
         if len(self.data["diagnosis"].unique()) == 1 or len(self.data["diagnosis"]) <= prune_thresh:
             num_of_sick = len([x for x in self.data["diagnosis"] if x == "M"])
             num_of_healthy = len([x for x in self.data["diagnosis"] if x == "B"])
@@ -214,7 +219,6 @@ class ID3:
         data["diagnosis"] = y
         num_of_samples = len(data.index)
         predictions_array = np.ndarray([num_of_samples])
-
         for row in range(len(data.index)):
             prediction = self.tree_traversal(self.id3tree, row, data)
             if prediction == "M":
@@ -227,7 +231,7 @@ class ID3:
         """
         Classifier to utilize ID3 tree.
         fitting the data into ID3 tree and predicts the diagnosis for data set x.
-        computes accuracy and loss for y. (?)
+        computes accuracy for y.
         :param train: dataset
         :type: numpy.ndarray
         :param test: dataset
