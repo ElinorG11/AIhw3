@@ -258,17 +258,17 @@ class ID3:
                 real_binary_diagnosis.append(0)
         for row in range(len(data.index)):
             prediction = predictions[row]
+            if prediction == 0: # person is healthy, but real classification says he is ill, means we got false positive
+                false_positive_all_labels_M += 1
             if prediction == real_binary_diagnosis[row]:  # pred is correct
                 correct_predictions += 1
-                if real_binary_diagnosis[row] == 0:  # all_labels_sick would be wrong
-                    false_positive_all_labels_M += 1
+                # if real_binary_diagnosis[row] == 0:  # all_labels_sick would be wrong
             else:
                 if prediction == 1:  # person is healthy but we predicted sick
                     false_positive += 1
-                    false_positive_all_labels_M += 1
+                    # false_positive_all_labels_M += 1
                 else:  # person is sick but we predicted healthy
                     false_negative += 1
-
         accuracy = float(correct_predictions) / float(num_of_samples)
         loss = (false_positive + 8 * false_negative)
         loss_all_labels_M = false_positive_all_labels_M
@@ -326,9 +326,9 @@ def experiment(all_data, graph=False):
         avg_loss_list.append(sum(losses) / float(len(losses)))
     if graph:
         max_acc = max(avg_accuracy_list)
-        print(f"maximal accuracy for M=0 is: {max_acc}")
-        print(f"values of 5 losses are: {avg_loss_list}")
-        print(f"loss assuming all labels were 'M' is: {loss_all_labels_M}")
+        #print(f"maximal accuracy for M=0 is: {max_acc}")
+        print(f"values of 5 losses are: {sorted(avg_loss_list)}")
+        #print(f"loss assuming all labels were 'M' is: {loss_all_labels_M}")
         plt.plot(m_values, avg_accuracy_list)
         plt.xlabel("Value of M")
         plt.ylabel("Accuracy")
@@ -345,4 +345,4 @@ if __name__ == "__main__":
     # we send only test dataset to experiment function
     data = pd.DataFrame(train)
     # TODO: to run the experiment and print the graph, pleas uncomment the following line
-    # experiment(data, graph=True)
+    experiment(data, graph=True)

@@ -320,9 +320,10 @@ def experiment(all_data, graph=False, ):
             predictions = k_classifier.fit_predict(train, test)
             accuracy, loss = k_classifier.calculate_loss_and_accuracy(x_test, y_test, predictions)
             losses.append(loss)
+        avg_loss_list.append(sum(losses)/float(len(losses)))
     if graph:
-        print(f"values of losses are {losses}")
-        plt.plot(m_values, losses)
+        print(f"values of losses are {sorted(avg_loss_list)}")
+        plt.plot(m_values, sorted(avg_loss_list))
         plt.xlabel("Value of M")
         plt.ylabel("Loss")
         plt.show()
@@ -338,4 +339,4 @@ if __name__ == "__main__":
     # we send only test dataset to experiment function
     data = pd.DataFrame(train)
     # TODO: to run the experiment and print the graph, pleas uncomment the following line
-    # experiment(data, graph=True)
+    experiment(data, graph=True)
