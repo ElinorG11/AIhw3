@@ -9,10 +9,8 @@ from numpy import genfromtxt
 from matplotlib import pyplot as plt
 
 
-class PersonalizedID3:
-    def __init__(self, test_size, data=None):
-        self.test_size = test_size
-        self.data = data
+class PersonalizedID3(ID3):
+    def __init__(self):
         self.id3tree = None
 
     def fit(self, x, y):
@@ -29,8 +27,7 @@ class PersonalizedID3:
         predictions_array = np.ndarray([num_of_samples])
 
         for row in range(len(data.index)):
-            id3 = ID3()
-            prediction = id3.tree_traversal(self.id3tree, row, data)
+            prediction = self.tree_traversal(self.id3tree, row, data)
             if prediction == "M":
                 predictions_array[row] = 1
             else:
@@ -59,19 +56,20 @@ class PersonalizedID3:
         predictions = self.predict(test_x, test_y)
         return predictions
 
-    def check_leaf(self, T: ID3Tree, data):
+    def check_leaf(self, Node: ID3Tree, data):
         """
         function to check whether current node is a leaf
-        :param T:
+        :param Node:
         :param data:
         :return:
         """
-        return len(data.index) == 0 or T.is_leaf()
+        return len(data.index) == 0 or Node.is_leaf()
 
-    def prune(self, T: ID3Tree, data):
+    def prune(self, Node: ID3Tree, v_data):
         """
         function to prune the tree for optimizing loss
-        :param T: is an ID3 tree node
+        :param Node: is an ID3 tree node
+        param v_data: validation data used for pruning
         :return: pruned tree
         :rtype: ID3Tree
         """
@@ -90,8 +88,8 @@ class PersonalizedID3:
                 data_right.append(value)
 
         # recursively prune subtrees
-        T.left = self.prune(T.left, data_left)
-        T.right = self.prune(T.right, data_right)
+        Node.left = self.prune(Node.left, data_left)
+        Node.right = self.prune(Node.right, data_right)
 
         # get new root diagnosis by costs
         count_b, count_m = 0, 0
@@ -107,12 +105,11 @@ class PersonalizedID3:
 
         # evaluate error pruning vs no pruning
         err_prune, err_no_prune = 0, 0
-        for row in range(len(data.index)):
-            id3 = ID3()
-            prediction_classification = id3.tree_traversal(T, row, data)
-            real_classification = data["diagnosis"].iloc[row]
-            err_prune += self.Evaluate(majority_diagnosis, real_classification)
-            err_no_prune += self.Evaluate(prediction_classification, real_classification)
+        for row in range(len(v_data.index)):
+            prediction_classification = self.tree_traversal(Node, row, v_data)  # our trees prediction
+            real_classification = v_data["diagnosis"].iloc[row]
+            err_prune += self.Evaluate(majority_diagnosis, real_classification)  # error if pruned (with validation)
+            err_no_prune += self.Evaluate(prediction_classification, real_classification)  # error without prune
 
         # it will be better to prune - leaf should have only a diagnosis so we can identify it
         if err_prune < err_no_prune:
@@ -170,14 +167,15 @@ def experiment(all_data, m_values=None, graph=False):
     for train_index, test_index in kf.split(x):
         x_train, x_test = x[train_index], x[test_index]
         y_train, y_test = y[train_index], y[test_index]
-        train = np.concatenate((y_train,x_train), axis=1)
-        test = np.concatenate((y_test,x_test), axis=1)
+        train = np.concatenate((y_train, x_train), axis=1)
+        test = np.concatenate((y_test, x_test), axis=1)
         predictions = k_classifier.fit_predict(train, test)
         loss = k_classifier.calculate_loss_and_accuracy(x_test, y_test, predictions)
         losses.append(loss)
     avg_loss_list.append(sum(losses) / float(len(losses)))
     if graph:
         print(f"Value of average loss is: {avg_loss_list}")
+
 
 if __name__ == "__main__":
     classifier = ID3(prune_thresh=-1)
@@ -188,5 +186,5 @@ if __name__ == "__main__":
     # we send only test dataset to experiment function
     data = pd.DataFrame(train)
 
-    # TODO: to run the experiment, pleas uncomment the following line
-    experiment(data)
+    # TODO: to run the experiment, please uncomment the following line
+    experiment(data, graph=True)
