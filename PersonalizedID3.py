@@ -302,7 +302,7 @@ class ID3:
                 return self.tree_traversal(node.right, row, data)
 
 
-def experiment(all_data, graph=False, ):
+def experiment(all_data, graph=False):
     """
     # TODO in order to see accuracy value, please uncomment in main part the first "TODO"
     graph: option to plot graph
@@ -326,8 +326,8 @@ def experiment(all_data, graph=False, ):
             losses.append(loss)
         avg_loss_list.append(sum(losses)/float(len(losses)))
     if graph:
-        print(f"values of losses are {sorted(avg_loss_list)}")
-        plt.plot(m_values, sorted(avg_loss_list))
+        print(f"values of losses are {avg_loss_list}")
+        plt.plot(m_values, avg_loss_list)
         plt.xlabel("Value of M")
         plt.ylabel("Loss")
         plt.show()
@@ -338,9 +338,9 @@ if __name__ == "__main__":
 
     # get numpy ndarray from csv
     train = genfromtxt('train.csv', delimiter=',', dtype="unicode")
-    test = genfromtxt('test1.csv', delimiter=',', dtype="unicode")
+    # test = genfromtxt('test.csv', delimiter=',', dtype="unicode")
 
     # we send only test dataset to experiment function
     data = pd.DataFrame(train)
-    # TODO: to run the experiment and print the graph, pleas uncomment the following line
-    # experiment(data, graph=True)
+    # TODO: to run the experiment, pleas uncomment the following line
+    # experiment(data)

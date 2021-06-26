@@ -322,9 +322,10 @@ def experiment(all_data, m_values=None, graph=False):
         avg_loss_list.append(sum(losses) / float(len(losses)))
     if graph:
         max_acc = max(avg_accuracy_list)
-        #print(f"maximal accuracy is: {max_acc}")
-        #print(f"Value of average loss is: {sorted(avg_loss_list)}")
-        #print(f"loss assuming all labels were 'M' is: {loss_all_labels_M}")
+        index = avg_accuracy_list.index(max_acc)
+        # print(f"maximal accuracy is: {max_acc} for value of M: {m_values[index]}")
+        # print(f"Value of average loss is: {avg_loss_list}")
+        # print(f"loss assuming all labels were 'M' is: {loss_all_labels_M}")
         plt.plot(m_values, avg_accuracy_list)
         plt.xlabel("Value of M")
         plt.ylabel("Accuracy")
@@ -336,12 +337,12 @@ if __name__ == "__main__":
 
     # get numpy ndarray from csv
     train = genfromtxt('train.csv', delimiter=',', dtype="unicode")
-    test = genfromtxt('test1.csv', delimiter=',', dtype="unicode")
+    # test = genfromtxt('test.csv', delimiter=',', dtype="unicode")
 
     # we send only test dataset to experiment function
     data = pd.DataFrame(train)
-    # TODO: to run the experiment and print the graph, pleas uncomment the following line
-    # experiment(data, graph=True)
+    # TODO: to run the experiment, pleas uncomment the following line
+    experiment(data)
 
-    # print 5 losses for optimal split value (which is M=0 in our case)
-    # experiment(data,[0,0,0,0,0], graph=True)
+    # print 5 losses for optimal split value (which is M=11 in our case)
+    # experiment(data,[11,11,11,11,11])
