@@ -135,7 +135,6 @@ class PersonalizedID3:
         test_y = pd.DataFrame(test_y)
         data = test_x.copy()
         data["diagnosis"] = test_y
-        correct_predictions = 0
         false_negative = 0
         false_positive = 0
         num_of_samples = len(data.index)
@@ -147,18 +146,47 @@ class PersonalizedID3:
                 real_binary_diagnosis.append(0)
         for row in range(len(data.index)):
             prediction = predictions[row]
-            if prediction == real_binary_diagnosis[row]:  # pred is correct
-                correct_predictions += 1
-            else:
+            if prediction != real_binary_diagnosis[row]:  # pred is correct
                 if prediction == 1:  # person is healthy but we predicted sick
                     false_positive += 1
                 else:  # person is sick but we predicted healthy
                     false_negative += 1
-
-        accuracy = float(correct_predictions) / float(num_of_samples)
         loss = (false_positive + 8 * false_negative)
-        return accuracy, loss
+        return loss
 
 
-def experiment(train, graph=False):
-    raise NotImplementedError
+def experiment(all_data, m_values=None, graph=False):
+    """
+    # TODO in order to see accuracy value, please uncomment in main part the first "TODO"
+    graph: option to plot graph
+    """
+    x, y = get_data_from_df(all_data)
+    x = x.to_numpy()
+    y = y.to_numpy()
+    kf = KFold(n_splits=5, random_state=314985664, shuffle=True)
+    avg_loss_list = []
+    losses = []
+    k_classifier = ID3(prune_thresh=1)
+    for train_index, test_index in kf.split(x):
+        x_train, x_test = x[train_index], x[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+        train = np.concatenate((y_train,x_train), axis=1)
+        test = np.concatenate((y_test,x_test), axis=1)
+        predictions = k_classifier.fit_predict(train, test)
+        loss = k_classifier.calculate_loss_and_accuracy(x_test, y_test, predictions)
+        losses.append(loss)
+    avg_loss_list.append(sum(losses) / float(len(losses)))
+    if graph:
+        print(f"Value of average loss is: {avg_loss_list}")
+
+if __name__ == "__main__":
+    classifier = ID3(prune_thresh=-1)
+
+    # get numpy ndarray from csv
+    train = genfromtxt('train.csv', delimiter=',', dtype="unicode")
+
+    # we send only test dataset to experiment function
+    data = pd.DataFrame(train)
+
+    # TODO: to run the experiment, pleas uncomment the following line
+    experiment(data)
