@@ -2,7 +2,7 @@
 # pdf for convenience.
 
 from ID3 import ID3, ID3Tree, get_data_from_df, log, DEFAULT_CLASSIFICATION
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, train_test_split
 import pandas as pd
 import numpy as np
 from numpy import genfromtxt
@@ -12,13 +12,6 @@ from matplotlib import pyplot as plt
 class PersonalizedID3(ID3):
     def __init__(self):
         self.id3tree = None
-
-    def fit(self, x, y):
-        validation_data = pd.DataFrame(x.copy())
-        validation_data["diagnosis"] = pd.DataFrame(y)
-        id3tree = ID3Tree(data=validation_data)
-        pruned_tree = self.prune(id3tree, self.data)
-        self.id3tree = pruned_tree
 
     def predict(self, x, y):
         data = x.copy()
@@ -48,12 +41,20 @@ class PersonalizedID3(ID3):
         # retrieve the data from the csv file
         df_train = pd.DataFrame(train)
         df_test = pd.DataFrame(test)
-        train_x, train_y = get_data_from_df(df_train)
-        test_x, test_y = get_data_from_df(df_test)
+        x, y = get_data_from_df(df_train)
+        x_test, y_test = get_data_from_df(df_test)
+        x_train, x_valid, y_train, y_valid = train_test_split(x, y, test_size=validation_ratio)
         # fit the classifier
-        self.fit(train_x, train_y)
+        validation_data = pd.DataFrame(x_valid.copy())
+        validation_data["diagnosis"] = pd.DataFrame(y_valid)
+        train_data = pd.DataFrame(x_train.copy())
+        train_data["diagnosis"] = pd.DataFrame(y_train)
+        self.id3tree = ID3Tree(data=train_data)
+        # prune the tree
+        pruned_tree = self.prune(self.id3tree, validation_data)
+        self.id3tree = pruned_tree
         # predict using test dataset
-        predictions = self.predict(test_x, test_y)
+        predictions = self.predict(x_test, y_test)
         return predictions
 
     def check_leaf(self, Node: ID3Tree, data):
@@ -75,14 +76,14 @@ class PersonalizedID3(ID3):
         """
 
         # stop condition - check if node is leaf
-        if self.check_leaf(T, data) == 0:
-            return T
+        if self.check_leaf(Node, v_data) == 0:
+            return Node
 
         # perform slicing of the data by feature values
         data_left = []
         data_right = []
-        for value in self.data[T.feature]:
-            if value <= T.slice_thresh:
+        for value in v_data[Node.feature]:
+            if value <= Node.slice_thresh:
                 data_left.append(value)
             else:
                 data_right.append(value)
@@ -93,7 +94,7 @@ class PersonalizedID3(ID3):
 
         # get new root diagnosis by costs
         count_b, count_m = 0, 0
-        for x in data["diagnosis"]:
+        for x in v_data["diagnosis"]:
             if x == "M":
                 count_m += 1
             else:
@@ -113,13 +114,13 @@ class PersonalizedID3(ID3):
 
         # it will be better to prune - leaf should have only a diagnosis so we can identify it
         if err_prune < err_no_prune:
-            T.data = None
-            T.feature = None
-            T.left = None
-            T.right = None
-            T.slice_thresh = None
-            T.diagnosis = majority_diagnosis
-        return T
+            Node.data = None
+            Node.feature = None
+            Node.left = None
+            Node.right = None
+            Node.slice_thresh = None
+            Node.diagnosis = majority_diagnosis
+        return Node
 
     def Evaluate(self, prediction_classification, real_classification):
         if prediction_classification != real_classification:
@@ -134,7 +135,6 @@ class PersonalizedID3(ID3):
         data["diagnosis"] = test_y
         false_negative = 0
         false_positive = 0
-        num_of_samples = len(data.index)
         real_binary_diagnosis = []
         for row in range(len(data.index)):
             if data["diagnosis"].iloc[row] == "M":
@@ -152,7 +152,7 @@ class PersonalizedID3(ID3):
         return loss
 
 
-def experiment(all_data, m_values=None, graph=False):
+def experiment(all_data, graph=False):
     """
     # TODO in order to see accuracy value, please uncomment in main part the first "TODO"
     graph: option to plot graph
@@ -162,17 +162,20 @@ def experiment(all_data, m_values=None, graph=False):
     y = y.to_numpy()
     kf = KFold(n_splits=5, random_state=314985664, shuffle=True)
     avg_loss_list = []
-    losses = []
-    k_classifier = ID3(prune_thresh=1)
-    for train_index, test_index in kf.split(x):
-        x_train, x_test = x[train_index], x[test_index]
-        y_train, y_test = y[train_index], y[test_index]
-        train = np.concatenate((y_train, x_train), axis=1)
-        test = np.concatenate((y_test, x_test), axis=1)
-        predictions = k_classifier.fit_predict(train, test)
-        loss = k_classifier.calculate_loss_and_accuracy(x_test, y_test, predictions)
-        losses.append(loss)
-    avg_loss_list.append(sum(losses) / float(len(losses)))
+    k_classifier = PersonalizedID3()
+    v_ratios = [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
+
+    for v in v_ratios:
+        losses = []
+        for train_index, test_index in kf.split(x):
+            x_train, x_test = x[train_index], x[test_index]
+            y_train, y_test = y[train_index], y[test_index]
+            train = np.concatenate((y_train, x_train), axis=1)
+            test = np.concatenate((y_test, x_test), axis=1)
+            predictions = k_classifier.fit_predict(train, test, v)
+            loss = k_classifier.calculate_loss_and_accuracy(x_test, y_test, predictions)
+            losses.append(loss)
+        avg_loss_list.append(sum(losses) / float(len(losses)))
     if graph:
         print(f"Loss list: {avg_loss_list}")
         print(f"Value of best loss is: {min(avg_loss_list)}")
@@ -183,8 +186,6 @@ def experiment(all_data, m_values=None, graph=False):
 
 
 if __name__ == "__main__":
-    classifier = ID3(prune_thresh=-1)
-
     # get numpy ndarray from csv
     train = genfromtxt('train.csv', delimiter=',', dtype="unicode")
 
