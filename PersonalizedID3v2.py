@@ -34,7 +34,7 @@ class PersonalizedID3(ID3):
                 predictions_array[row] = 0
         return predictions_array
 
-    def fit_predict(self, train, test):
+    def fit_predict(self, train, test, validation_ratio=0.425):
         """
         Classifier to utilize ID3 tree.
         fitting the data into ID3 tree and predicts the diagnosis for data set x.
@@ -174,7 +174,12 @@ def experiment(all_data, m_values=None, graph=False):
         losses.append(loss)
     avg_loss_list.append(sum(losses) / float(len(losses)))
     if graph:
-        print(f"Value of average loss is: {avg_loss_list}")
+        print(f"Loss list: {avg_loss_list}")
+        print(f"Value of best loss is: {min(avg_loss_list)}")
+        plt.plot(v_ratios, avg_loss_list)
+        plt.xlabel("Validation ratio")
+        plt.ylabel("Loss")
+        plt.show()
 
 
 if __name__ == "__main__":

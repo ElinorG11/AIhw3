@@ -39,6 +39,7 @@ class ID3Tree:
     """
     Tree class creates the ID3 tree
     """
+
     def __init__(self, prune_thresh=-1, data=None):
         """
         Init function generates the tree.
@@ -120,7 +121,8 @@ class ID3Tree:
             rchild_neg_prob = 1 - rchild_pos_prob
             entropy_right = -rchild_pos_prob * log(rchild_pos_prob) - (rchild_neg_prob * log(rchild_neg_prob))
 
-            ig = entropy_root - entropy_left * num_of_smaller_samples / len(values) - entropy_right * num_of_larger_samples / len(values)
+            ig = entropy_root - entropy_left * num_of_smaller_samples / len(
+                values) - entropy_right * num_of_larger_samples / len(values)
             if ig >= best_ig[0]:
                 best_ig = (ig, separator)
 
@@ -254,7 +256,7 @@ class ID3:
                 real_binary_diagnosis.append(1)
             else:
                 real_binary_diagnosis.append(0)
-                false_positive_all_labels_M += 1 # real data classification is B but we always predict M
+                false_positive_all_labels_M += 1  # real data classification is B but we always predict M
         for row in range(len(data.index)):
             prediction = predictions[row]
             if prediction == real_binary_diagnosis[row]:  # pred is correct
@@ -268,7 +270,6 @@ class ID3:
         loss = (false_positive + 8 * false_negative)
         loss_all_labels_M = false_positive_all_labels_M
         return accuracy, loss, loss_all_labels_M
-
 
     def tree_traversal(self, node, row, data):
         """
@@ -300,32 +301,37 @@ def experiment(all_data, m_values=None, graph=False):
     x, y = get_data_from_df(all_data)
     x = x.to_numpy()
     y = y.to_numpy()
-    if m_values == None:
-        m_values = [i for i in range(1, 51, 10)]  # TODO: check what happens when m_value = 0
+    if m_values is None:
+        m_values = [i for i in range(1, 51, 10)]
     kf = KFold(n_splits=5, random_state=314985664, shuffle=True)
     avg_accuracy_list = []
     avg_loss_list = []
     for m in m_values:
         accuracy_k_values = []
         losses = []
+        M_list = []
         k_classifier = ID3(prune_thresh=m)
         for train_index, test_index in kf.split(x):
             x_train, x_test = x[train_index], x[test_index]
             y_train, y_test = y[train_index], y[test_index]
-            train = np.concatenate((y_train,x_train), axis=1)
-            test = np.concatenate((y_test,x_test), axis=1)
+            train = np.concatenate((y_train, x_train), axis=1)
+            test = np.concatenate((y_test, x_test), axis=1)
             predictions = k_classifier.fit_predict(train, test)
-            curr_accuracy, loss, loss_all_labels_M = k_classifier.calculate_loss_and_accuracy(x_test, y_test, predictions)
+            curr_accuracy, loss, loss_all_labels_M = k_classifier.calculate_loss_and_accuracy(x_test, y_test,
+                                                                                              predictions)
+            M_list.append(loss_all_labels_M)
             accuracy_k_values.append(curr_accuracy)
             losses.append(loss)
         avg_accuracy_list.append(sum(accuracy_k_values) / float(len(accuracy_k_values)))
-        avg_loss_list.append(sum(losses) / float(len(losses)))
+        #avg_loss_list.append(sum(losses) / float(len(losses)))
     if graph:
         max_acc = max(avg_accuracy_list)
         index = avg_accuracy_list.index(max_acc)
-        # print(f"maximal accuracy is: {max_acc} for value of M: {m_values[index]}")
-        # print(f"Value of average loss is: {avg_loss_list}")
-        # print(f"loss assuming all labels were 'M' is: {loss_all_labels_M}")
+        print(f"maximal accuracy is: {max_acc} for value of M: {m_values[index]}")
+        print(f"Loss list: {losses}")
+        print(f"Average loss is: {sum(losses) / float(len(losses))}")
+        print(f"Losses assuming all labels were 'M' is: {M_list}")
+        print(f"Average Loss is: {sum(M_list) / float(len(M_list))} ")
         plt.plot(m_values, avg_accuracy_list)
         plt.xlabel("Value of M")
         plt.ylabel("Accuracy")
@@ -341,8 +347,8 @@ if __name__ == "__main__":
 
     # we send only test dataset to experiment function
     data = pd.DataFrame(train)
-    # TODO: to run the experiment, pleas uncomment the following line
-    experiment(data)
+    # TODO: to run the experiment, please uncomment the following line
+    experiment(data, None, True)
 
     # print 5 losses for optimal split value (which is M=11 in our case)
-    # experiment(data,[11,11,11,11,11])
+    # experiment(data, [11], True)
